@@ -35,7 +35,7 @@ from tests.factories import ProductFactory
 
 # Disable all but critical errors during normal test run
 # uncomment for debugging failing tests
-# logging.disable(logging.CRITICAL)
+logging.disable(logging.CRITICAL)
 
 # DATABASE_URI = os.getenv('DATABASE_URI', 'sqlite:///../db/test.db')
 DATABASE_URI = os.getenv(
@@ -164,8 +164,36 @@ class TestProductRoutes(TestCase):
         self.assertEqual(response.status_code, status.HTTP_415_UNSUPPORTED_MEDIA_TYPE)
 
     #
-    # ADD YOUR TEST CASES HERE
+    # TEST CASES HERE
     #
+    def test_get_product(self):
+        """It should Get a single Product"""
+        test_product = self._create_products(1)[0]
+        response = self.client.get(BASE_URL+'/'+ str(test_product.id))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["name"],test_product.name )
+
+    def test_get_product_not_found(self):
+        """It should Get  Not Found a single Product"""
+        response = self.client.get(BASE_URL+'/'+ str(0))
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        data = response.get_json()
+        self.assertIn("was not found", data["message"])
+
+    def test_update_product(self):
+        """It should update a Product"""
+        test_product = ProductFactory()
+        response = self.client.post(BASE_URL, json=test_product.serialize())
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(len(Product.all()),1)
+        new_product = response.get_json()
+        new_product["description"] = "unknown"
+        response = self.client.put(BASE_URL+'/'+ str(new_product['id']), json=new_product)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        data = response.get_json()
+        self.assertEqual(data["description"],"unknown")
+
 
     ######################################################################
     # Utility functions
